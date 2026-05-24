@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ITU ACM Instants</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: #0b0b0d;
+      color: #fff;
+      font-family: -apple-system, 'SF Pro Display', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 0;
+    }
+
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+    header p  { margin-top: 6px; font-size: 15px; color: #8e8e93; }
+
+    /* ── Drop zone ───────────────────────────────── */
+    #dropzone {
+      width: 100%; max-width: 460px; aspect-ratio: 1;
+      border: 2px dashed #2c2c2e; border-radius: 28px;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px; cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative; text-align: center; padding: 24px;
+    }
+    #dropzone:hover, #dropzone.over {
+      border-color: #f5b301; background: rgba(245,179,1,.04);
+    }
+    #dropzone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0;
+    }
+    #dropzone svg { color: #3a3a3c; }
+    #dropzone .hint { font-size: 15px; color: #636366; line-height: 1.5; }
+    #dropzone .hint strong { color: #f5b301; font-weight: 600; }
+    #dropzone .sub { font-size: 13px; color: #48484a; }
+
+    #fileBadge {
+      display: none; background: #f5b301; color: #000;
+      font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 99px;
+    }
+
+    /* ── Settings panel ──────────────────────────── */
+    #settings {
+      width: 100%; max-width: 460px;
+      background: #111113; border: 1px solid #222224;
+      border-radius: 20px; padding: 18px 20px; margin-top: 14px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+
+    .field label {
+      font-size: 11px; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: #48484a; display: block; margin-bottom: 7px;
+    }
+    .field input[type="text"] {
+      width: 100%; background: #1c1c1e; border: 1px solid #2c2c2e;
+      border-radius: 10px; padding: 9px 12px; color: #fff;
+      font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s;
+    }
+    .field input[type="text"]:focus { border-color: #f5b301; }
+
+    .color-wrap {
+      display: flex; align-items: center; gap: 10px; background: #1c1c1e;
+      border: 1px solid #2c2c2e; border-radius: 10px; padding: 8px 12px;
+      cursor: pointer; transition: border-color .15s; position: relative;
+    }
+    .color-wrap:focus-within { border-color: #f5b301; }
+    .color-swatch { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; pointer-events: none; }
+    .color-hex { font-size: 13px; color: #8e8e93; flex: 1; pointer-events: none; }
+    .color-wrap input[type="color"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; padding: 0;
+    }
+
+    .icon-wrap {
+      display: flex; align-items: center; gap: 10px; background: #1c1c1e;
+      border: 1px solid #2c2c2e; border-radius: 10px; padding: 8px 12px;
+      cursor: pointer; transition: border-color .15s; position: relative; overflow: hidden;
+    }
+    .icon-wrap:hover { border-color: #3a3a3c; }
+    .icon-circle {
+      width: 28px; height: 28px; border-radius: 50%; background: #f5b301;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: #000; flex-shrink: 0; overflow: hidden;
+    }
+    .icon-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .icon-hint { font-size: 12px; color: #636366; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .icon-wrap input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    /* ── Per-photo emoji list ─────────────────────── */
+    #photoEmojis {
+      display: none;
+      width: 100%; max-width: 460px; margin-top: 14px;
+      background: #111113; border: 1px solid #222224;
+      border-radius: 20px; overflow: hidden;
+    }
+    .pe-header {
+      padding: 13px 18px 10px;
+      font-size: 11px; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: #48484a;
+    }
+    .pe-scroll {
+      max-height: 272px; overflow-y: auto;
+    }
+    .pe-scroll::-webkit-scrollbar { width: 4px; }
+    .pe-scroll::-webkit-scrollbar-track { background: transparent; }
+    .pe-scroll::-webkit-scrollbar-thumb { background: #2c2c2e; border-radius: 99px; }
+
+    .pe-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; border-top: 1px solid #1a1a1c;
+    }
+    .pe-thumb {
+      width: 36px; height: 36px; border-radius: 8px;
+      object-fit: cover; flex-shrink: 0; background: #2c2c2e;
+    }
+    .pe-name {
+      font-size: 12px; color: #636366; flex: 0 0 72px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pe-emojis { display: flex; gap: 6px; flex: 1; }
+    .pe-emoji-input {
+      flex: 1; min-width: 0;
+      background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 8px;
+      padding: 7px 2px; color: #fff; font-size: 18px; text-align: center;
+      outline: none; transition: border-color .15s; font-family: inherit;
+    }
+    .pe-emoji-input:focus { border-color: #f5b301; }
+
+    /* ── Generate button ─────────────────────────── */
+    #generateWrap { display: none; margin-top: 12px; width: 100%; max-width: 460px; }
+
+    /* ── Loading ─────────────────────────────────── */
+    #loading {
+      display: none; flex-direction: column; align-items: center;
+      gap: 20px; width: 100%; max-width: 460px;
+    }
+    .spinner {
+      width: 52px; height: 52px; border: 3px solid #1c1c1e;
+      border-top-color: #f5b301; border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingLabel { font-size: 15px; color: #8e8e93; }
+    #loadingNote  { font-size: 13px; color: #48484a; }
+
+    /* ── Result ──────────────────────────────────── */
+    #result {
+      display: none; flex-direction: column; align-items: center;
+      gap: 20px; width: 100%; max-width: 460px;
+    }
+    #resultImg { width: 100%; border-radius: 18px; display: none; }
+
+    .actions { display: flex; gap: 12px; width: 100%; }
+    .btn {
+      flex: 1; padding: 15px; border-radius: 14px; border: none;
+      font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none;
+      text-align: center; transition: opacity .15s; font-family: inherit;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary   { background: #f5b301; color: #000; }
+    .btn-secondary { background: #1c1c1e; color: #fff; }
+
+    /* ── Error ───────────────────────────────────── */
+    #error {
+      display: none; color: #ff453a; font-size: 14px;
+      text-align: center; margin-top: 12px; max-width: 460px;
+    }
+
+    footer { margin-top: 40px; font-size: 13px; color: #2c2c2e; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Instants</h1>
+    <p>Drop event photos — get ready-to-post Instagram frames.</p>
+  </header>
+
+  <!-- Drop zone -->
+  <div id="dropzone">
+    <input type="file" accept="image/*" multiple id="fileInput">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+    <p class="hint">Drop photos here<br>or <strong>click to browse</strong></p>
+    <p class="sub">PNG · JPG · JPEG · WEBP &nbsp;·&nbsp; select multiple</p>
+    <span id="fileBadge"></span>
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings">
+    <div class="field">
+      <label for="cfgHandle">Handle</label>
+      <input type="text" id="cfgHandle" value="ituacmsc" placeholder="@handle" maxlength="40">
+    </div>
+    <div class="field">
+      <label for="cfgTime">Time</label>
+      <input type="text" id="cfgTime" value="now" placeholder="now" maxlength="40">
+    </div>
+    <div class="field">
+      <label>Accent</label>
+      <div class="color-wrap">
+        <div class="color-swatch" id="colorSwatch"></div>
+        <span class="color-hex" id="colorHex">#f5b301</span>
+        <input type="color" id="cfgAccent" value="#f5b301">
+      </div>
+    </div>
+    <div class="field">
+      <label>Icon</label>
+      <div class="icon-wrap">
+        <div class="icon-circle" id="iconPreview"><span>ACM</span></div>
+        <span class="icon-hint" id="iconHint">click to change</span>
+        <input type="file" id="cfgIcon" accept="image/*">
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-photo emoji list (shown after files selected) -->
+  <div id="photoEmojis">
+    <p class="pe-header">Emojis per photo</p>
+    <div class="pe-scroll" id="peList"></div>
+  </div>
+
+  <!-- Generate button -->
+  <div id="generateWrap">
+    <button class="btn btn-primary" style="width:100%;" onclick="upload()">Generate</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loadingLabel">Generating…</p>
+    <p id="loadingNote"></p>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+    <img id="resultImg" alt="Generated instant">
+    <div class="actions">
+      <a id="downloadBtn" class="btn btn-primary">Download</a>
+      <button class="btn btn-secondary" onclick="reset()">New photos</button>
+    </div>
+  </div>
+
+  <div id="error"></div>
+  <footer>ITU ACM Student Chapter</footer>
+
+  <script>
+    const EMOJI_SETS = [
+      ['💻','⚡','🤖','🔥'], ['📦','🚀','💼','🌟'],
+      ['📊','🐍','🧠','⚡'], ['🛠️','🔧','💡','🎯'],
+      ['🎮','🕹️','👾','🚀'], ['🔐','🛡️','🔍','💡'],
+      ['🌐','☁️','📡','🔗'], ['📱','💬','🎨','✨'],
+    ];
+
+    const dropzone     = document.getElementById('dropzone');
+    const fileInput    = document.getElementById('fileInput');
+    const fileBadge    = document.getElementById('fileBadge');
+    const settingsEl   = document.getElementById('settings');
+    const photoEmojis  = document.getElementById('photoEmojis');
+    const peList       = document.getElementById('peList');
+    const generateWrap = document.getElementById('generateWrap');
+    const loading      = document.getElementById('loading');
+    const loadingLabel = document.getElementById('loadingLabel');
+    const loadingNote  = document.getElementById('loadingNote');
+    const result       = document.getElementById('result');
+    const resultImg    = document.getElementById('resultImg');
+    const downloadBtn  = document.getElementById('downloadBtn');
+    const errorEl      = document.getElementById('error');
+
+    const cfgHandle   = document.getElementById('cfgHandle');
+    const cfgTime     = document.getElementById('cfgTime');
+    const cfgAccent   = document.getElementById('cfgAccent');
+    const cfgIcon     = document.getElementById('cfgIcon');
+    const colorSwatch = document.getElementById('colorSwatch');
+    const colorHex    = document.getElementById('colorHex');
+    const iconPreview = document.getElementById('iconPreview');
+    const iconHint    = document.getElementById('iconHint');
+
+    let selectedFiles = [];
+    let iconFile      = null;
+
+    // ── Settings live updates ─────────────────────
+    cfgAccent.addEventListener('input', () => {
+      colorSwatch.style.background = cfgAccent.value;
+      colorHex.textContent = cfgAccent.value;
+    });
+    colorSwatch.style.background = cfgAccent.value;
+
+    cfgIcon.addEventListener('change', () => {
+      const file = cfgIcon.files[0];
+      if (!file) return;
+      iconFile = file;
+      iconPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="icon">`;
+      const n = file.name;
+      iconHint.textContent = n.length > 18 ? n.slice(0, 18) + '…' : n;
+    });
+
+    // ── Drag & drop ───────────────────────────────
+    dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('over');
+      setFiles([...e.dataTransfer.files].filter(f => f.type.startsWith('image/')));
+    });
+    fileInput.addEventListener('change', () => setFiles([...fileInput.files]));
+
+    function setFiles(files) {
+      if (!files.length) return;
+      selectedFiles = files;
+      fileBadge.textContent   = files.length === 1 ? '1 photo selected' : `${files.length} photos selected`;
+      fileBadge.style.display = 'inline-block';
+      generateWrap.style.display = 'block';
+      errorEl.style.display   = 'none';
+      buildEmojiRows(files);
+    }
+
+    // ── Per-photo emoji list ───────────────────────
+    function buildEmojiRows(files) {
+      peList.innerHTML = '';
+      files.forEach((file, idx) => {
+        const defaults = EMOJI_SETS[idx % EMOJI_SETS.length];
+
+        const row = document.createElement('div');
+        row.className = 'pe-row';
+
+        const thumb = document.createElement('img');
+        thumb.className = 'pe-thumb';
+        thumb.src = URL.createObjectURL(file);
+        thumb.alt = '';
+
+        const name = document.createElement('span');
+        name.className = 'pe-name';
+        const stem = file.name.replace(/\.[^.]+$/, '');
+        name.textContent = stem.length > 10 ? stem.slice(0, 10) + '…' : stem;
+        name.title = file.name;
+
+        const emojis = document.createElement('div');
+        emojis.className = 'pe-emojis';
+        defaults.forEach(ch => {
+          const inp = document.createElement('input');
+          inp.className = 'pe-emoji-input';
+          inp.value = ch;
+          inp.maxLength = 4;
+          emojis.appendChild(inp);
+        });
+
+        row.appendChild(thumb);
+        row.appendChild(name);
+        row.appendChild(emojis);
+        peList.appendChild(row);
+      });
+      photoEmojis.style.display = 'block';
+    }
+
+    // ── Upload & generate ─────────────────────────
+    async function upload() {
+      if (!selectedFiles.length) return;
+
+      show('loading');
+      const n = selectedFiles.length;
+      loadingLabel.textContent = n === 1 ? 'Generating your instant…' : `Generating ${n} instants…`;
+      loadingNote.textContent  = n > 5 ? 'This may take a minute for large batches.' : '';
+
+      const form = new FormData();
+      selectedFiles.forEach(f => form.append('files', f));
+
+      form.append('handle', cfgHandle.value.trim() || 'ituacmsc');
+      form.append('time',   cfgTime.value.trim()   || 'now');
+      form.append('accent', cfgAccent.value);
+      if (iconFile) form.append('icon', iconFile);
+
+      // Collect per-photo emoji sets
+      const emojiSets = Array.from(peList.querySelectorAll('.pe-row')).map(row =>
+        Array.from(row.querySelectorAll('.pe-emoji-input')).map(inp => inp.value.trim() || '⚡')
+      );
+      form.append('emojis_json', JSON.stringify(emojiSets));
+
+      try {
+        const res = await fetch('/generate', { method: 'POST', body: form });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ detail: 'Unknown error' }));
+          throw new Error(body.detail || 'Unknown error');
+        }
+
+        const blob     = await res.blob();
+        const url      = URL.createObjectURL(blob);
+        const isZip    = blob.type === 'application/zip';
+        const filename = isZip
+          ? 'instants.zip'
+          : (selectedFiles[0].name.replace(/\.[^.]+$/, '') || 'instant') + '-instant.png';
+
+        downloadBtn.href        = url;
+        downloadBtn.download    = filename;
+        downloadBtn.textContent = isZip ? `Download ZIP (${n} posts)` : 'Download';
+
+        resultImg.src           = isZip ? '' : url;
+        resultImg.style.display = isZip ? 'none' : 'block';
+
+        show('result');
+      } catch (err) {
+        show('dropzone');
+        showError(err.message || 'Something went wrong. Try again.');
+      }
+    }
+
+    // ── View management ───────────────────────────
+    function show(which) {
+      const inSetup = which === 'dropzone';
+      dropzone.style.display     = inSetup ? 'flex'  : 'none';
+      settingsEl.style.display   = inSetup ? 'grid'  : 'none';
+      photoEmojis.style.display  = (inSetup && selectedFiles.length) ? 'block' : 'none';
+      generateWrap.style.display = (inSetup && selectedFiles.length) ? 'block' : 'none';
+      loading.style.display      = which === 'loading' ? 'flex' : 'none';
+      result.style.display       = which === 'result'  ? 'flex' : 'none';
+      errorEl.style.display      = 'none';
+    }
+
+    function showError(msg) {
+      errorEl.textContent   = '⚠ ' + msg;
+      errorEl.style.display = 'block';
+    }
+
+    function reset() {
+      selectedFiles = [];
+      iconFile      = null;
+      fileInput.value = '';
+      cfgIcon.value   = '';
+      iconPreview.innerHTML    = '<span>ACM</span>';
+      iconHint.textContent     = 'click to change';
+      fileBadge.style.display  = 'none';
+      peList.innerHTML         = '';
+      show('dropzone');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code session
+.claude/
+
+# Generated outputs — don't commit renders
+outputs/
+
+# Event photos — keep off GitHub (personal/private)
+events/
+
+# Server temp files
+tmp/
+
+# Local events config (rotations, per-event overrides)
+# Commit events.example.json instead
+events.json

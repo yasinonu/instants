@@ -1,0 +1,5 @@
+{
+  "amazon-visit":  { "emojis": ["📦","🚀","💼","🔥"] },
+  "data-workshop": { "emojis": ["📊","🐍","🤖","⚡"], "time": "tomorrow" },
+  "compiler-talk": { "emojis": ["🛠️","💻","🧠","🔥"] }
+}

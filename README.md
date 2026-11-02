@@ -20,8 +20,9 @@ Both render [`template.html`](template.html) in headless Chromium through Playwr
 ## Web app
 
 <p align="center">
-  <img src="docs/screenshots/ui-empty.png" width="45%" alt="Instants web UI: drop zone and settings">
-  <img src="docs/screenshots/ui-result.png" width="45%" alt="Instants web UI: generated result with download button">
+  <img src="docs/screenshots/ui-empty.png" width="32%" alt="Instants web UI: drop zone and settings">
+  <img src="docs/screenshots/ui-selected.png" width="32%" alt="Instants web UI: four photos selected with per-photo emoji pickers">
+  <img src="docs/screenshots/ui-result.png" width="32%" alt="Instants web UI: generated result with download button">
 </p>
 
 ```bash
